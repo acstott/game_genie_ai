@@ -73,21 +73,21 @@ def guess_safer_code(code, rom_path):
     header = _read_rom_header(rom.read(16))
     addr, code = code_to_data_addr(code)
     addr = int(addr, 16)
-    codes = set()
+    codes_set = set()
     root = header['offset'] + addr
     for x in range(header['prg_banks']):
         rom.seek(((x - 1) * 16384) + root, os.SEEK_SET)
         byte = rom.read(1)
         if byte == '':
             break
-        codes.add(addr_data_to_code(addr, code, ord(byte)))
+        codes_set.add(addr_data_to_code(addr, code))
     root = header['offset'] + (addr & 0x1FFF) + (16384 * header['prg_banks'])
     for x in range(header['chr_banks']):
         rom.seek(((x - 1) * 8192) + root, os.SEEK_SET)
         byte = rom.read(1)
         if byte == '':
             break
-        codes.add(addr_data_to_code(addr, code, ord(byte)))
+        codes_set.add(addr_data_to_code(addr, code))
     return codes
 
 

@@ -65,28 +65,38 @@ def random_code():
                              random.randint(0, 255))
 
 
-
 def guess_safer_code(code, rom_path):
     rom = open(rom_path, 'rb')
     header = _read_rom_header(rom.read(16))
     addr, code = code_to_data_addr(code)
     addr = int(addr, 16)
-    codes = set()
+    codes_set = set()
     root = header['offset'] + addr
     for x in range(header['prg_banks']):
         rom.seek(((x - 1) * 16384) + root, os.SEEK_SET)
         byte = rom.read(1)
         if byte == '':
             break
-        codes.add(addr_data_to_code(addr, code, ord(byte)))
+        codes_set.add(addr_data_to_code(addr, code))
     root = header['offset'] + (addr & 0x1FFF) + (16384 * header['prg_banks'])
     for x in range(header['chr_banks']):
         rom.seek(((x - 1) * 8192) + root, os.SEEK_SET)
         byte = rom.read(1)
         if byte == '':
             break
-        codes.add(addr_data_to_code(addr, code, ord(byte)))
+        codes_set.add(addr_data_to_code(addr, code))
     return codes
+
+
+def _read_rom_header(header):
+    head = struct.unpack('BBBBBB', header[4:10])
+    trainer = head[2] & 0x04
+    print(head, trainer)
+    return {
+        'prg_banks': head[0],
+        'chr_banks': head[1],
+        'offset': 16 + (512 if trainer else 0),
+    }
 
 
 def guess_based_on_char(char, rom_path, write=200, harder=False, short=False):
@@ -119,16 +129,3 @@ def guess_based_on_char(char, rom_path, write=200, harder=False, short=False):
     if not len(codes_set) > 0 and not harder:
         return guess_based_on_char(char, rom_path, write, True)
     return codes_set
-
-
-
-
-def _read_rom_header(header):
-    head = struct.unpack('BBBBBB', header[4:10])
-    trainer = head[2] & 0x04;
-    print(head, trainer)
-    return {
-        'prg_banks': head[0],
-        'chr_banks': head[1],
-        'offset': 16 + (512 if trainer else 0),
-    }
